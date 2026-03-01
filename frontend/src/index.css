@@ -1,0 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+    font-family: system-ui, 'Lexend', Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light dark;
+    font-synthesis: none;
+    text-rendering: auto;
+    -webkit-font-smoothing: subpixel-antialiased;
+    -moz-osx-font-smoothing: auto;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-width: 100%;
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+#root {
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Full width container utility */
+.w-full-screen {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+}
+
+/* Responsive utilities */
+@layer utilities {
+    .container-full {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .fluid-container {
+        width: 100%;
+        max-width: 1920px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+
+        .container-full,
+        .fluid-container {
+            padding-left: 3rem;
+            padding-right: 3rem;
+        }
+    }
+
+    @media (min-width: 1536px) {
+
+        .container-full,
+        .fluid-container {
+            padding-left: 5rem;
+            padding-right: 5rem;
+        }
+    }
+}
+
+/* Animation utilities */
+.animate-in {
+    animation: animateIn 0.3s ease-out forwards;
+}
+
+@keyframes animateIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Fade in animation */
+.fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Slide in from bottom */
+.slide-in-bottom {
+    animation: slideInBottom 0.5s ease-out forwards;
+}
+
+@keyframes slideInBottom {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom scrollbar class for sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e144;
+    border-radius: 20px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: #cbd5e188;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #33415566;
+}
+
+.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: #334155aa;
+}
+
+/* Global scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Ensure body respects dark mode transition */
+body {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}

@@ -1,0 +1,23 @@
+# General
+.DS_Store
+*.log
+.env
+.env.*
+
+# Node
+node_modules/
+dist/
+build/
+.npm
+.eslintcache
+
+# Project specific
+backend/node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+.agents/
+.agent/
+.gemini/
+brain/
+tmp/
