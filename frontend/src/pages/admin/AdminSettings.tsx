@@ -353,14 +353,14 @@ export default function AdminSettings() {
                                             <div className="size-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm mb-4">
                                                 <span className="material-symbols-outlined">payments</span>
                                             </div>
-                                            <h4 className="text-sm font-black text-slate-900 mb-1">Razorpay Institutional</h4>
-                                            <p className="text-xs text-slate-500 font-medium tracking-tight">Standard Indian intelligence gateway</p>
+                                            <h4 className="text-sm font-black text-slate-900 mb-1">Paytm Gateway</h4>
+                                            <p className="text-xs text-slate-500 font-medium tracking-tight">Active payment provider</p>
                                         </div>
                                         <div className="p-6 border-2 border-slate-50 hover:border-slate-100 transition-all rounded-[1.5rem] grayscale opacity-40">
                                             <div className="size-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mb-4">
                                                 <span className="material-symbols-outlined">account_balance</span>
                                             </div>
-                                            <h4 className="text-sm font-black text-slate-900 mb-1">Stripe Global</h4>
+                                            <h4 className="text-sm font-black text-slate-900 mb-1">Razorpay (Legacy)</h4>
                                             <p className="text-xs text-slate-500 font-medium tracking-tight">Decommissioned gateway</p>
                                         </div>
                                     </div>

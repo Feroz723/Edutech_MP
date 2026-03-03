@@ -34,8 +34,8 @@ app.use(globalLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Webhooks must be registered BEFORE global rate limiters if any,
-// and sometimes need raw body parsing (though Razorpay works with JSON)
+// Webhooks must be registered BEFORE global rate limiters.
+// Paytm callbacks are URL-encoded POST payloads.
 app.use("/api/webhooks", webhookRoutes);
 
 app.use("/api/auth", authLimiter, authRoutes);
