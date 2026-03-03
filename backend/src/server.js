@@ -32,6 +32,7 @@ app.use(cors({
 }));
 app.use(globalLimiter);
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Webhooks must be registered BEFORE global rate limiters if any,
 // and sometimes need raw body parsing (though Razorpay works with JSON)
