@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -43,16 +43,7 @@ export default function InstructorEarnings() {
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState("30d");
 
-    useEffect(() => {
-        if (!user || user.role !== "instructor") {
-            navigate("/");
-            return;
-        }
-
-        fetchData();
-    }, [user, navigate, dateRange]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [statsRes, earningsRes] = await Promise.all([
                 api.get("/instructor/stats"),
@@ -72,7 +63,16 @@ export default function InstructorEarnings() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [dateRange, showToast]);
+
+    useEffect(() => {
+        if (!user || user.role !== "instructor") {
+            navigate("/");
+            return;
+        }
+
+        fetchData();
+    }, [user, navigate, fetchData]);
 
     const handleExport = () => {
         // Generate CSV export

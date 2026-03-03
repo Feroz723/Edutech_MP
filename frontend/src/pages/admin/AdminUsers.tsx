@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -32,16 +32,7 @@ export default function AdminUsers() {
     const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "student" });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        if (authLoading) return;
-        if (!user || user.role !== "admin") {
-            navigate("/");
-            return;
-        }
-        fetchUsers();
-    }, [user, authLoading, navigate]);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             const res = await api.get("/admin/users");
             // In a real app, these would come from the relational DB
@@ -56,7 +47,16 @@ export default function AdminUsers() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user || user.role !== "admin") {
+            navigate("/");
+            return;
+        }
+        fetchUsers();
+    }, [user, authLoading, navigate, fetchUsers]);
 
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -30,6 +30,10 @@ const AdminAnalytics = lazy(() => import('@/pages/admin/AdminAnalytics'))
 const CreateCourse = lazy(() => import('@/pages/instructor/CreateCourse'))
 const EditCourse = lazy(() => import('@/pages/instructor/EditCourse'))
 const ManageLessons = lazy(() => import('@/pages/instructor/ManageLessons'))
+const InstructorDashboard = lazy(() => import('@/pages/instructor/InstructorDashboard'))
+const InstructorCourses = lazy(() => import('@/pages/instructor/InstructorCourses'))
+const InstructorEarnings = lazy(() => import('@/pages/instructor/InstructorEarnings'))
+const InstructorApply = lazy(() => import('@/pages/instructor/InstructorApply'))
 
 // Student Pages
 const StudentDashboard = lazy(() => import('@/pages/student/StudentDashboard'))
@@ -55,9 +59,19 @@ function App() {
                             <Suspense fallback={<InstitutionalLoader />}>
                                 <Routes>
                                     {/* Dashboard & Student Routes - No Global Navbar/Footer */}
+                                    <Route path="/instructor/apply" element={
+                                        <ProtectedRoute>
+                                            <InstructorApply />
+                                        </ProtectedRoute>
+                                    } />
                                     <Route path="/admin/*" element={
                                         <ProtectedRoute role="admin">
                                             <AdminRoutes />
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/instructor/*" element={
+                                        <ProtectedRoute role="instructor">
+                                            <InstructorRoutes />
                                         </ProtectedRoute>
                                     } />
                                     <Route path="/student/dashboard" element={
@@ -130,6 +144,19 @@ function AdminRoutes() {
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="logs" element={<AdminLogs />} />
+        </Routes>
+    )
+}
+
+function InstructorRoutes() {
+    return (
+        <Routes>
+            <Route path="dashboard" element={<InstructorDashboard />} />
+            <Route path="courses" element={<InstructorCourses />} />
+            <Route path="courses/create" element={<CreateCourse />} />
+            <Route path="courses/:id/edit" element={<EditCourse />} />
+            <Route path="courses/:id/lessons" element={<ManageLessons />} />
+            <Route path="earnings" element={<InstructorEarnings />} />
         </Routes>
     )
 }

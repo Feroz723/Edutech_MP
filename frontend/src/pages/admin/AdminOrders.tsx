@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -48,17 +48,7 @@ export default function AdminOrders() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
-    useEffect(() => {
-        if (authLoading) return;
-        if (!user || user.role !== "admin") {
-            navigate("/");
-            return;
-        }
-
-        fetchData();
-    }, [user, authLoading, navigate]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [ordersRes, statsRes] = await Promise.all([
                 api.get("/admin/orders"),
@@ -71,7 +61,17 @@ export default function AdminOrders() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user || user.role !== "admin") {
+            navigate("/");
+            return;
+        }
+
+        fetchData();
+    }, [user, authLoading, navigate, fetchData]);
 
     if (loading || authLoading) return (
         <div className="flex h-screen items-center justify-center bg-background-light">

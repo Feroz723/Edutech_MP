@@ -38,6 +38,8 @@ export default function Auth() {
                 navigate(decodeURIComponent(redirectPath));
             } else if (user.role === "admin") {
                 navigate("/admin/dashboard");
+            } else if (user.role === "instructor") {
+                navigate("/instructor/dashboard");
             } else {
                 navigate("/student/dashboard");
             }

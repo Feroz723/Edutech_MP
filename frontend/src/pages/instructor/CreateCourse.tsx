@@ -72,7 +72,11 @@ export default function CreateCourse() {
             });
 
             showToast("Course draft initialized successfully!", "success");
-            navigate(`/admin/courses/${res.data.id}/lessons`);
+            if (user?.role === "instructor") {
+                navigate(`/instructor/courses/${res.data.id}/lessons`);
+            } else {
+                navigate(`/admin/courses/${res.data.id}/lessons`);
+            }
         } catch (error: any) {
             console.error("Create course error:", error);
             showToast(error.response?.data?.message || "Failed to initiate curriculum", "error");
@@ -87,7 +91,7 @@ export default function CreateCourse() {
         </div>
     );
 
-    if (!user || user.role !== "admin") {
+    if (!user || (user.role !== "admin" && user.role !== "instructor")) {
         navigate("/");
         return null;
     }
@@ -101,7 +105,7 @@ export default function CreateCourse() {
                     {/* Header */}
                     <div className="mb-10">
                         <Link
-                            to="/admin/courses"
+                            to={user?.role === "instructor" ? "/instructor/courses" : "/admin/courses"}
                             className="inline-flex items-center gap-2 text-slate-400 hover:text-primary mb-6 font-bold text-xs uppercase tracking-widest transition-all group"
                         >
                             <span className="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
@@ -234,7 +238,7 @@ export default function CreateCourse() {
                                     )}
                                 </button>
                                 <Link
-                                    to="/admin/courses"
+                                    to={user?.role === "instructor" ? "/instructor/courses" : "/admin/courses"}
                                     className="px-8 py-5 bg-slate-100 text-slate-500 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-colors"
                                 >
                                     ABORT

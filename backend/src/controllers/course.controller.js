@@ -96,7 +96,6 @@ exports.publishCourse = async (req, res) => {
 };
 
 exports.getCourseForLearning = async (req, res) => {
-    const userId = req.user.userId;
     const courseId = req.params.id;
 
     try {

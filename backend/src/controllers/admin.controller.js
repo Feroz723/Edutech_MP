@@ -114,7 +114,7 @@ exports.getAllUsers = async (req, res) => {
     try {
         const result = await pool.query("SELECT id, name, email, role, is_suspended, created_at FROM users ORDER BY created_at DESC");
         res.status(200).json(result.rows);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch users" });
     }
 };
@@ -126,7 +126,7 @@ exports.updateUserRole = async (req, res) => {
         await pool.query("UPDATE users SET role = $1 WHERE id = $2", [role, id]);
         await logAction(req.user.userId, "UPDATE_USER_ROLE", { targetUserId: id, newRole: role });
         res.status(200).json({ message: "Role updated" });
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to update role" });
     }
 };
@@ -146,7 +146,7 @@ exports.toggleUserSuspension = async (req, res) => {
         await logAction(req.user.userId, newState ? "SUSPEND_USER" : "UNSUSPEND_USER", { targetUserId: id });
 
         res.status(200).json({ message: `User ${newState ? 'suspended' : 'unsuspended'}` });
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to toggle suspension" });
     }
 };
@@ -205,7 +205,7 @@ exports.getAllCourses = async (req, res) => {
             ORDER BY c.created_at DESC
         `);
         res.status(200).json(result.rows);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch courses" });
     }
 };
@@ -222,7 +222,7 @@ exports.approveCourse = async (req, res) => {
         }
         await logAction(req.user.userId, "APPROVE_COURSE", { courseId: id, title: result.rows[0].title });
         res.status(200).json(result.rows[0]);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to approve course" });
     }
 };
@@ -233,7 +233,7 @@ exports.unpublishCourse = async (req, res) => {
         await pool.query("UPDATE courses SET is_published = false WHERE id = $1", [id]);
         await logAction(req.user.userId, "UNPUBLISH_COURSE", { courseId: id });
         res.status(200).json({ message: "Course unpublished" });
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to unpublish course" });
     }
 };
@@ -267,7 +267,7 @@ exports.getAllOrders = async (req, res) => {
             ORDER BY o.created_at DESC
         `);
         res.status(200).json(result.rows);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch orders" });
     }
 };
@@ -282,7 +282,7 @@ exports.getAuditLogs = async (req, res) => {
             LIMIT 50
         `);
         res.status(200).json(result.rows);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch audit logs" });
     }
 };
@@ -291,7 +291,7 @@ exports.getSettings = async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM platform_settings WHERE id = 1");
         res.status(200).json(result.rows[0]);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch settings" });
     }
 };

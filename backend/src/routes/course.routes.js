@@ -13,6 +13,22 @@ const {
     getCourseById,
 } = require("../controllers/course.controller");
 
+// Get my courses (Instructor/Admin portfolio)
+router.get(
+    "/mine",
+    authMiddleware,
+    roleMiddleware(["admin", "instructor"]),
+    getMyCourses
+);
+
+// Backward-compatible alias used by frontend
+router.get(
+    "/my-courses",
+    authMiddleware,
+    roleMiddleware(["admin", "instructor"]),
+    getMyCourses
+);
+
 // Get single course (Admin/Instructor Edit)
 router.get(
     "/:courseId",
@@ -24,23 +40,15 @@ router.get(
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("admin"),
+    roleMiddleware(["admin", "instructor"]),
     createCourse
-);
-
-// Get my courses (Admin viewing their portfolio)
-router.get(
-    "/mine",
-    authMiddleware,
-    roleMiddleware("admin"),
-    getMyCourses
 );
 
 // Publish course (Admin Marketplace Sync)
 router.put(
     "/:courseId/publish",
     authMiddleware,
-    roleMiddleware("admin"),
+    roleMiddleware(["admin", "instructor"]),
     publishCourse
 );
 
@@ -48,7 +56,7 @@ router.put(
 router.put(
     "/:id",
     authMiddleware,
-    roleMiddleware("admin"),
+    roleMiddleware(["admin", "instructor"]),
     updateCourse
 );
 

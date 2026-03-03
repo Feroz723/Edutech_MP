@@ -17,6 +17,7 @@ const adminRoutes = require("./routes/admin.routes");
 const studentRoutes = require("./routes/student.routes");
 const progressRoutes = require("./routes/progress.routes");
 const reviewRoutes = require("./routes/review.routes");
+const instructorRoutes = require("./routes/instructor.routes");
 const { globalLimiter, authLimiter, orderLimiter, paymentLimiter } = require("./middlewares/rateLimiter");
 const logger = require("./utils/logger");
 
@@ -46,6 +47,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/instructor", instructorRoutes);
 
 app.get("/api/health", async (req, res) => {
     try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
 import {
     Filter,
@@ -23,11 +23,7 @@ export default function Assignments() {
     const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
     const [submissionContent, setSubmissionContent] = useState("");
 
-    useEffect(() => {
-        fetchAssignments();
-    }, []);
-
-    const fetchAssignments = async () => {
+    const fetchAssignments = useCallback(async () => {
         try {
             const res = await api.get("/student/assignments");
             setAssignments(res.data);
@@ -36,7 +32,11 @@ export default function Assignments() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        fetchAssignments();
+    }, [fetchAssignments]);
 
     const handleSubmit = async () => {
         if (!submissionContent.trim()) {

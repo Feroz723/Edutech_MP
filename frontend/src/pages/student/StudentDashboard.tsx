@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -39,24 +39,7 @@ export default function StudentDashboard() {
     const [loading, setLoading] = useState(true);
     const [isProfileComplete, setIsProfileComplete] = useState<boolean>(true);
 
-    useEffect(() => {
-        if (authLoading) return;
-
-        if (!user) {
-            navigate("/auth");
-            return;
-        }
-
-        if (user.role !== "student") {
-            if (user.role === "admin") navigate("/admin/dashboard");
-            else navigate("/auth");
-            return;
-        }
-
-        fetchData();
-    }, [user, authLoading, navigate]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [coursesRes, statsRes, profileRes] = await Promise.all([
                 api.get("/student/courses"),
@@ -78,7 +61,24 @@ export default function StudentDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        if (authLoading) return;
+
+        if (!user) {
+            navigate("/auth");
+            return;
+        }
+
+        if (user.role !== "student") {
+            if (user.role === "admin") navigate("/admin/dashboard");
+            else navigate("/auth");
+            return;
+        }
+
+        fetchData();
+    }, [user, authLoading, navigate, fetchData]);
 
     if (loading || authLoading) {
         return (

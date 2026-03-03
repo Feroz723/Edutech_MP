@@ -57,7 +57,7 @@ exports.getCourseProgress = async (req, res) => {
             [userId, courseId]
         );
         res.status(200).json(result.rows.map(r => r.lesson_id));
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch progress" });
     }
 };

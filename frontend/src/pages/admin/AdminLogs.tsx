@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
@@ -32,16 +32,7 @@ export default function AdminLogs() {
     const [searchTerm, setSearchTerm] = useState("");
     const [levelFilter, setLevelFilter] = useState("all");
 
-    useEffect(() => {
-        if (!user || user.role !== "admin") {
-            navigate("/");
-            return;
-        }
-
-        fetchLogs();
-    }, [user, navigate]);
-
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get("/admin/logs");
@@ -51,7 +42,16 @@ export default function AdminLogs() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        if (!user || user.role !== "admin") {
+            navigate("/");
+            return;
+        }
+
+        fetchLogs();
+    }, [user, navigate, fetchLogs]);
 
     const filteredLogs = logs.filter(l => {
         const matchesSearch = l.message?.toLowerCase().includes(searchTerm.toLowerCase());

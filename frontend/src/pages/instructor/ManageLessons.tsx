@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -60,17 +60,7 @@ export default function ManageLessons() {
     const [newResource, setNewResource] = useState({ title: "", url: "", type: "link" });
     const [newAssignment, setNewAssignment] = useState({ title: "", description: "", max_points: "100" });
 
-    useEffect(() => {
-        if (authLoading) return;
-        if (!user || user.role !== "admin") {
-            navigate("/");
-            return;
-        }
-
-        fetchData();
-    }, [user, authLoading, navigate, courseId]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [courseRes, lessonsRes] = await Promise.all([
                 api.get(`/courses/${courseId}`),
@@ -84,7 +74,17 @@ export default function ManageLessons() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [courseId, navigate, showToast]);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user || user.role !== "admin") {
+            navigate("/");
+            return;
+        }
+
+        fetchData();
+    }, [user, authLoading, navigate, fetchData]);
 
     const handleAddLesson = async (e: React.FormEvent) => {
         e.preventDefault();

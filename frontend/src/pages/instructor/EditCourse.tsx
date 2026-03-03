@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -42,17 +42,7 @@ export default function EditCourse() {
         fetchCategories();
     }, []);
 
-    useEffect(() => {
-        if (authLoading) return;
-        if (!user || user.role !== "admin") {
-            navigate("/");
-            return;
-        }
-
-        fetchCourse();
-    }, [user, authLoading, navigate, id]);
-
-    const fetchCourse = async () => {
+    const fetchCourse = useCallback(async () => {
         try {
             const res = await api.get(`/courses/${id}`);
             const course = res.data;
@@ -68,7 +58,17 @@ export default function EditCourse() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, navigate, showToast]);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user || user.role !== "admin") {
+            navigate("/");
+            return;
+        }
+
+        fetchCourse();
+    }, [user, authLoading, navigate, fetchCourse]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

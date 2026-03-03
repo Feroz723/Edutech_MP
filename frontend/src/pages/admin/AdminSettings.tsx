@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Button from "@/components/ui/Button";
 import api from "@/lib/api";
@@ -26,11 +26,7 @@ export default function AdminSettings() {
         tax_percentage: 18
     });
 
-    useEffect(() => {
-        fetchSettings();
-    }, []);
-
-    const fetchSettings = async () => {
+    const fetchSettings = useCallback(async () => {
         try {
             const res = await api.get("/admin/settings");
             setSettings(res.data);
@@ -39,7 +35,11 @@ export default function AdminSettings() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        fetchSettings();
+    }, [fetchSettings]);
 
     const handleSave = async () => {
         setSaving(true);

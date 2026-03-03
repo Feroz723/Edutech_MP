@@ -339,6 +339,10 @@ exports.changePassword = async (req, res) => {
 // Dev only: Change user role for testing
 exports.changeRole = async (req, res) => {
     try {
+        if (process.env.ENABLE_DEV_ROLE_SWITCH !== "true") {
+            return res.status(403).json({ message: "Role switching is disabled" });
+        }
+
         const userId = req.user.userId;
         const { role } = req.body;
 

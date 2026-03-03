@@ -2,7 +2,12 @@ const pool = require("../config/db");
 
 exports.submitReview = async (req, res) => {
     const userId = req.user.userId;
-    const { courseId, rating, comment } = req.body;
+    const courseId = req.body.courseId || req.params.courseId;
+    const { rating, comment } = req.body;
+
+    if (!courseId) {
+        return res.status(400).json({ message: "Course ID required" });
+    }
 
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ message: "Valid rating (1-5) required" });
 
@@ -43,7 +48,7 @@ exports.getCourseReviews = async (req, res) => {
         `, [courseId]);
 
         res.status(200).json(result.rows);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch reviews" });
     }
 };

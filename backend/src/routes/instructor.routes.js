@@ -20,6 +20,13 @@ router.post(
     becomeInstructor
 );
 
+// Backward-compatible alias used by frontend
+router.post(
+    "/apply",
+    authMiddleware,
+    becomeInstructor
+);
+
 // Instructor stats
 router.get(
     "/stats",
@@ -119,7 +126,7 @@ router.get(
                 totalRevenue: Number(revenue.rows[0].coalesce),
                 topCourse: topCourse.rows[0] || null
             });
-        } catch (err) {
+        } catch {
             res.status(500).json({ message: "Failed to fetch instructor stats" });
         }
     }

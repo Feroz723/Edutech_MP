@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -26,39 +26,7 @@ export default function SecureVideoPlayer({ videoId }: SecureVideoPlayerProps) {
     const [showControls, setShowControls] = useState(true);
     const controlsTimeoutRef = useRef<any>(null);
 
-    // Initialize YouTube API
-    useEffect(() => {
-        // Transition Lockdown: Reset state when video changes
-        if (playerRef.current) {
-            setIsReady(false);
-            setIsPlaying(false);
-            setProgress(0);
-            setCurrentTime(0);
-        }
-
-        if (!window.YT) {
-            const tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-        }
-
-        window.onYouTubeIframeAPIReady = () => {
-            initPlayer();
-        };
-
-        if (window.YT && window.YT.Player) {
-            initPlayer();
-        }
-
-        return () => {
-            if (playerRef.current) {
-                playerRef.current.destroy();
-            }
-        };
-    }, [videoId]);
-
-    const initPlayer = () => {
+    const initPlayer = useCallback(() => {
         playerRef.current = new window.YT.Player(`player-${videoId}`, {
             videoId: videoId,
             playerVars: {
@@ -93,7 +61,40 @@ export default function SecureVideoPlayer({ videoId }: SecureVideoPlayerProps) {
                 }
             }
         });
-    };
+    }, [videoId]);
+
+    // Initialize YouTube API
+    useEffect(() => {
+        // Transition Lockdown: Reset state when video changes
+        if (playerRef.current) {
+            setIsReady(false);
+            setIsPlaying(false);
+            setProgress(0);
+            setCurrentTime(0);
+        }
+
+        if (!window.YT) {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+        }
+
+        window.onYouTubeIframeAPIReady = () => {
+            initPlayer();
+        };
+
+        if (window.YT && window.YT.Player) {
+            initPlayer();
+        }
+
+        return () => {
+            if (playerRef.current) {
+                playerRef.current.destroy();
+                playerRef.current = null;
+            }
+        };
+    }, [videoId, initPlayer]);
 
     // Update progress
     useEffect(() => {

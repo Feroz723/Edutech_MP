@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -25,15 +25,7 @@ export default function InstructorCourses() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (!user || user.role !== "instructor") {
-            navigate("/auth");
-            return;
-        }
-        fetchCourses();
-    }, [user, navigate]);
-
-    const fetchCourses = async () => {
+    const fetchCourses = useCallback(async () => {
         try {
             const res = await api.get("/courses/my-courses");
             setCourses(res.data);
@@ -42,7 +34,15 @@ export default function InstructorCourses() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        if (!user || user.role !== "instructor") {
+            navigate("/auth");
+            return;
+        }
+        fetchCourses();
+    }, [user, navigate, fetchCourses]);
 
     const handlePublish = async (courseId: string, currentStatus: boolean) => {
         try {

@@ -11,7 +11,7 @@ import {
     Search,
     Loader2
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 
@@ -21,11 +21,7 @@ export default function Certificates() {
     const [certificates, setCertificates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchCertificates();
-    }, []);
-
-    const fetchCertificates = async () => {
+    const fetchCertificates = useCallback(async () => {
         try {
             const res = await api.get("/student/certificates");
             setCertificates(res.data);
@@ -34,7 +30,11 @@ export default function Certificates() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        fetchCertificates();
+    }, [fetchCertificates]);
 
     const handleDownload = (cert: any) => {
         showToast(`Preparing download for ${cert.course_title}...`, "success");

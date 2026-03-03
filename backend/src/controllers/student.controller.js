@@ -114,7 +114,7 @@ exports.getRecentActivity = async (req, res) => {
             LIMIT 5
         `, [userId]);
         res.status(200).json(result.rows);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch activity" });
     }
 };
@@ -166,7 +166,7 @@ exports.getCertificates = async (req, res) => {
             ORDER BY cert.issued_at DESC
         `, [userId]);
         res.status(200).json(result.rows);
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: "Failed to fetch certificates" });
     }
 };
