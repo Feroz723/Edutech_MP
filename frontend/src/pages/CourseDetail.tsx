@@ -86,9 +86,13 @@ export default function CourseDetailPage() {
             const orderId = orderRes.data.orderId;
 
             const paymentRes = await api.post("/payments/create", { orderId });
-            navigate(`/payments/checkout/${orderId}`, {
-                state: { paymentSession: paymentRes.data },
-            });
+            const paymentSession = paymentRes.data;
+
+            if (!paymentSession?.mid || !paymentSession?.txnToken || !paymentSession?.paymentUrl) {
+                throw new Error("Invalid payment initialization response");
+            }
+
+            navigate(`/payments/checkout/${orderId}`, { state: { paymentSession } });
         } catch (error: any) {
             console.error("Purchase failed", error);
             const message = error?.response?.data?.message || "Unable to start payment. Please try again.";

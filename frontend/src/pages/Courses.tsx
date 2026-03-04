@@ -1,10 +1,18 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
-import { useAuth } from "@/context/AuthContext";
-import Sidebar from "@/components/Sidebar";
 import Button from "@/components/ui/Button";
+import {
+    Star,
+    Users,
+    Clock,
+    PlayCircle,
+    ChevronRight,
+    Search,
+    SlidersHorizontal,
+    ArrowLeft
+} from "lucide-react";
 
 interface Course {
     id: string;
@@ -16,16 +24,14 @@ interface Course {
     total_reviews: number;
     category_name?: string;
     thumbnail?: string;
-    instructor_role?: string;
     duration?: string;
+    total_lessons?: number;
 }
 
 export default function CoursesPage() {
-    useAuth();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [courses, setCourses] = useState<Course[]>([]);
-    const [trendingCourses, setTrendingCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
     const { showToast } = useToast();
 
@@ -33,30 +39,28 @@ export default function CoursesPage() {
     const selectedCategory = searchParams.get("category") || "All";
 
     const categories = [
-        { id: "Code", label: "Code", icon: "code", count: "1.2k courses", colorCode: "bg-blue-100 text-blue-600" },
-        { id: "Business", label: "Business", icon: "business_center", count: "850 courses", colorCode: "bg-emerald-100 text-emerald-600" },
-        { id: "Design", label: "Design", icon: "palette", count: "600 courses", colorCode: "bg-purple-100 text-purple-600" },
-        { id: "Marketing", label: "Marketing", icon: "trending_up", count: "400 courses", colorCode: "bg-orange-100 text-orange-600" },
+        "All",
+        "Business",
+        "Development",
+        "Design",
+        "Marketing",
+        "Data Science",
+        "Personal Development"
     ];
 
     useEffect(() => {
-        const loadInitialData = async () => {
+        const fetchCourses = async () => {
             try {
-                const [coursesRes, trendingRes] = await Promise.all([
-                    api.get("/public/courses"),
-                    api.get("/public/courses/trending")
-                ]);
-
-                setCourses(coursesRes.data);
-                setTrendingCourses(trendingRes.data);
+                const res = await api.get("/public/courses");
+                setCourses(res.data);
             } catch (error) {
-                showToast("Failed to refresh marketplace", "error");
+                showToast("Failed to fetch courses", "error");
             } finally {
                 setLoading(false);
             }
         };
 
-        loadInitialData();
+        fetchCourses();
     }, [showToast]);
 
     useEffect(() => {
@@ -95,177 +99,177 @@ export default function CoursesPage() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-            <Sidebar />
+        <div className="min-h-screen bg-background-light dark:bg-background-dark pb-32">
+            <div className="fluid-container pt-12">
+                {/* Header & Breadcrumbs */}
+                <div className="flex flex-col gap-8 mb-12">
+                    <nav className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        <Link to="/" className="hover:text-primary transition-colors flex items-center gap-1">
+                            <ArrowLeft size={14} />
+                            Home
+                        </Link>
+                        <ChevronRight size={14} />
+                        <span className="text-slate-900 dark:text-white">Available Courses</span>
+                    </nav>
 
-            <main className="flex-1 overflow-y-auto">
-                {/* Header Search Section */}
-                <div className="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 md:px-10 py-6">
-                    <div className="flex items-center gap-4 max-w-[1600px] mx-auto">
-                        <div className="flex-1 relative group">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
-                            <input
-                                type="text"
-                                placeholder="Search for courses, instructors, or skills..."
-                                value={searchQuery}
-                                onChange={(e) => updateSearch(e.target.value)}
-                                className="w-full pl-12 pr-6 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
-                            />
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10">
+                        <div className="max-w-3xl">
+                            <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter leading-tight mb-4">
+                                Available Courses
+                            </h1>
+                            <p className="text-slate-500 dark:text-slate-400 text-xl font-medium leading-relaxed">
+                                Detailed list of industry-standard courses taught by world-class experts.
+                            </p>
                         </div>
-                        <button className="p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                            <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">tune</span>
+
+                        <div className="flex gap-4 w-full lg:w-auto">
+                            <div className="flex-1 lg:w-80 relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Search courses..."
+                                    value={searchQuery}
+                                    onChange={(e) => updateSearch(e.target.value)}
+                                    className="w-full pl-12 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-sm"
+                                />
+                            </div>
+                            <button className="flex items-center gap-2 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                <SlidersHorizontal size={18} />
+                                Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Category Pills */}
+                <div className="flex gap-3 overflow-x-auto pb-6 mb-12 scrollbar-none snap-x">
+                    {categories.map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => updateCategory(cat)}
+                            className={`px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all snap-start ${selectedCategory === cat
+                                    ? "bg-primary text-white shadow-xl shadow-primary/30"
+                                    : "bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 hover:border-primary/50"
+                                }`}
+                        >
+                            {cat}
                         </button>
+                    ))}
+                </div>
+
+                {/* Course List Wrapper */}
+                <div className="flex flex-col gap-8">
+                    {loading ? (
+                        [1, 2, 3].map(i => (
+                            <div key={i} className="h-64 bg-slate-100 dark:bg-slate-800 rounded-[2.5rem] animate-pulse" />
+                        ))
+                    ) : filteredCourses.length === 0 ? (
+                        <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-dashed border-slate-200 dark:border-slate-700 p-24 text-center">
+                            <Search className="size-20 text-slate-200 mx-auto mb-6" />
+                            <h3 className="text-2xl font-black mb-2">No matching curricula</h3>
+                            <p className="text-slate-500 font-medium mb-10">Try a different search term or category.</p>
+                            <Button onClick={() => setSearchParams({})}>Reset All Filters</Button>
+                        </div>
+                    ) : (
+                        filteredCourses.map((course) => (
+                            <CourseListItem key={course.id} course={course} onClick={() => navigate(`/courses/${course.id}`)} />
+                        ))
+                    )}
+                </div>
+
+                {/* Pagination */}
+                <div className="flex justify-center mt-20 gap-3">
+                    <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-900 transition-all font-black">
+                        <ChevronRight className="rotate-180" size={20} />
+                    </button>
+                    <button className="w-12 h-12 flex items-center justify-center rounded-2xl bg-primary text-white font-black shadow-lg shadow-primary/30">1</button>
+                    {[2, 3].map(i => (
+                        <button key={i} className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 font-black transition-all">
+                            {i}
+                        </button>
+                    ))}
+                    <span className="flex items-center justify-center w-12 text-slate-400 font-black italic">...</span>
+                    <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 font-black transition-all">12</button>
+                    <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-900 transition-all font-black">
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function CourseListItem({ course, onClick }: { course: Course, onClick: () => void }) {
+    return (
+        <div
+            onClick={onClick}
+            className="group flex flex-col lg:flex-row bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 cursor-pointer"
+        >
+            {/* Thumbnail Area */}
+            <div className="lg:w-80 w-full h-64 lg:h-auto overflow-hidden relative">
+                <img
+                    src={course.thumbnail || `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop`}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 transition-opacity"
+                    alt={course.title}
+                />
+                <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute top-6 left-6 z-20 flex flex-col gap-2">
+                    <span className="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-xl shadow-lg">Bestseller</span>
+                    {course.price > 1000 && <span className="bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-xl shadow-lg">Premium Access</span>}
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex flex-1 flex-col lg:flex-row p-10 gap-10">
+                <div className="flex-1 space-y-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black text-primary px-3 py-1 bg-primary/10 rounded-lg uppercase tracking-widest">
+                                {course.category_name || "Enterprise"}
+                            </span>
+                            {course.average_rating > 4.5 && (
+                                <div className="flex items-center gap-1 text-amber-500">
+                                    <Star size={14} className="fill-amber-500" />
+                                    <span className="text-xs font-black tracking-widest uppercase">{course.average_rating || "4.9"}</span>
+                                </div>
+                            )}
+                        </div>
+                        <h3 className="text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tighter group-hover:text-primary transition-colors">
+                            {course.title}
+                        </h3>
+                    </div>
+
+                    <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed font-medium line-clamp-2">
+                        {course.description}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 pt-4 border-t border-slate-50 dark:border-slate-800">
+                        <MetaItem icon={<Users size={16} />} label={course.instructor_name} />
+                        <MetaItem icon={<Clock size={16} />} label={course.duration || "Self-Paced"} />
+                        <MetaItem icon={<PlayCircle size={16} />} label={`${course.total_lessons || 48} Curricula`} />
                     </div>
                 </div>
 
-                <div className="px-6 md:px-10 pb-12 max-w-[1600px] mx-auto space-y-12">
-                    {/* Categories */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {categories.map((cat) => (
-                            <div
-                                key={cat.id}
-                                onClick={() => updateCategory(cat.id)}
-                                className={`flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 hover:border-primary/40 transition-all cursor-pointer group shadow-sm hover:shadow-xl hover:shadow-primary/5 ${selectedCategory === cat.id ? "border-primary bg-primary/[0.02]" : ""}`}
-                            >
-                                <div className={`w-14 h-14 ${cat.colorCode} rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all duration-500 transform group-hover:scale-110`}>
-                                    <span className="material-symbols-outlined text-3xl">{cat.icon}</span>
-                                </div>
-                                <span className="text-sm font-black tracking-tight">{cat.label}</span>
-                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">{cat.count}</span>
-                            </div>
-                        ))}
+                {/* Price & Action Area */}
+                <div className="flex lg:flex-col justify-between lg:justify-center items-center lg:items-end lg:min-w-[200px] border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 pt-8 lg:pt-0 lg:pl-10">
+                    <div className="text-right">
+                        <p className="text-4xl font-black text-slate-900 dark:text-white">₹{course.price.toLocaleString()}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">One-Time IP Access</p>
                     </div>
-
-                    {/* Trending Slider */}
-                    <div>
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-2xl font-black tracking-tight">Trending Courses</h2>
-                            <button className="text-primary text-sm font-black uppercase tracking-widest hover:underline px-2 py-1">View all</button>
-                        </div>
-                        <div className="flex gap-8 overflow-x-auto pb-6 -mx-2 px-2 scrollbar-none snap-x">
-                            {trendingCourses.map((course) => (
-                                <div
-                                    key={course.id}
-                                    onClick={() => navigate(`/courses/${course.id}`)}
-                                    className="min-w-[340px] bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-800 group cursor-pointer snap-start"
-                                >
-                                    <div className="h-44 overflow-hidden relative p-4">
-                                        <img
-                                            src={course.thumbnail || `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop`}
-                                            className="w-full h-full object-cover rounded-[1.8rem] transition-transform duration-700 group-hover:scale-110"
-                                            alt={course.title}
-                                        />
-                                        <div className="absolute top-6 right-8 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-primary text-[10px] font-black tracking-widest uppercase shadow-lg">Best Seller</div>
-                                    </div>
-                                    <div className="p-8 pt-4">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <span className="text-[10px] font-black text-primary px-3 py-1.5 bg-primary/10 rounded-lg uppercase tracking-widest">{course.category_name}</span>
-                                            <div className="flex items-center text-amber-500 gap-1">
-                                                <span className="material-symbols-outlined text-sm font-fill">star</span>
-                                                <span className="text-xs font-black text-slate-700 dark:text-slate-300">{course.average_rating || "4.9"}</span>
-                                            </div>
-                                        </div>
-                                        <h3 className="font-black text-lg text-slate-900 dark:text-white mb-2 line-clamp-1 group-hover:text-primary transition-colors">{course.title}</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">{course.instructor_name} • {course.duration}</p>
-                                        <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-800 pt-6">
-                                            <span className="text-2xl font-black text-slate-900 dark:text-white">₹{course.price.toLocaleString()}</span>
-                                            <button className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
-                                                <span className="material-symbols-outlined text-sm">add_shopping_cart</span>
-                                                Add
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Available Courses Grid */}
-                    <div className="pt-4">
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-2xl font-black tracking-tight">Available Courses</h2>
-                            <div className="flex items-center gap-6 bg-white dark:bg-slate-900 px-6 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Sort by:</span>
-                                <button className="text-xs font-black flex items-center gap-2 text-slate-900 dark:text-white uppercase tracking-widest hover:text-primary transition-colors">
-                                    Popularity <span className="material-symbols-outlined text-lg">expand_more</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {loading ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {[1, 2, 3, 4, 5, 6].map(i => (
-                                    <div key={i} className="h-96 w-full bg-slate-100 dark:bg-slate-800 rounded-[2.5rem] animate-pulse"></div>
-                                ))}
-                            </div>
-                        ) : filteredCourses.length === 0 ? (
-                            <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-dashed border-slate-300 dark:border-slate-700 p-24 text-center">
-                                <div className="size-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-300">
-                                    <span className="material-symbols-outlined text-5xl">manage_search</span>
-                                </div>
-                                <h3 className="text-2xl font-black mb-3">No matches found</h3>
-                                <p className="text-slate-500 max-w-md mx-auto font-medium">We couldn't find any courses matching your current search or filters. Try broad terms or different categories.</p>
-                                <Button className="mt-10" onClick={() => setSearchParams({})}>Reset all filters</Button>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {filteredCourses.map((course) => (
-                                    <div
-                                        key={course.id}
-                                        onClick={() => navigate(`/courses/${course.id}`)}
-                                        className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 group cursor-pointer"
-                                    >
-                                        <div className="h-48 relative overflow-hidden p-4 pb-0">
-                                            <div className="absolute inset-4 overflow-hidden rounded-[1.8rem]">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-primary to-indigo-900 flex items-center justify-center transition-transform duration-700 group-hover:scale-110">
-                                                    <span className="material-symbols-outlined text-white/20 text-8xl transition-all duration-500 group-hover:rotate-12 group-hover:scale-125">
-                                                        {course.category_name?.toLowerCase().includes("code") ? "code" :
-                                                            course.category_name?.toLowerCase().includes("design") ? "palette" : "school"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="p-8 flex-1 flex flex-col">
-                                            <h4 className="font-black text-lg text-slate-900 dark:text-white mb-3 line-clamp-2 h-14 leading-tight group-hover:text-primary transition-colors">{course.title}</h4>
-
-                                            <div className="flex items-center gap-1 mb-8">
-                                                <div className="flex text-amber-500">
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <span key={star} className={`material-symbols-outlined text-lg ${star <= Math.floor(course.average_rating || 5) ? "font-fill" : ""}`}>star</span>
-                                                    ))}
-                                                </div>
-                                                <span className="text-xs font-black text-slate-400 ml-2 tracking-widest">{course.average_rating || "4.9"}</span>
-                                            </div>
-
-                                            <div className="mt-auto flex items-center justify-between border-t border-slate-50 dark:border-slate-800 pt-8">
-                                                <span className="text-2xl font-black text-slate-900 dark:text-white">₹{course.price.toLocaleString()}</span>
-                                                <button className="p-4 text-primary bg-primary/10 rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm">
-                                                    <span className="material-symbols-outlined text-2xl font-black">add_shopping_cart</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Pagination */}
-                        <div className="flex justify-center mt-20 gap-3">
-                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-900 transition-all">
-                                <span className="material-symbols-outlined">chevron_left</span>
-                            </button>
-                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl bg-primary text-white font-black shadow-lg shadow-primary/30">1</button>
-                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 font-black transition-all">2</button>
-                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 font-black transition-all">3</button>
-                            <span className="flex items-center justify-center w-12 text-slate-400 font-black italic">...</span>
-                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 font-black transition-all">12</button>
-                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-900 transition-all">
-                                <span className="material-symbols-outlined">chevron_right</span>
-                            </button>
-                        </div>
-                    </div>
+                    <Button className="mt-6 h-14 px-10 rounded-2xl shadow-xl shadow-primary/20 group-hover:scale-105 transition-transform" size="lg">
+                        View Curriculum
+                    </Button>
                 </div>
-            </main>
+            </div>
+        </div>
+    );
+}
+
+function MetaItem({ icon, label }: { icon: React.ReactNode, label: string }) {
+    return (
+        <div className="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
+            <span className="text-primary">{icon}</span>
+            {label}
         </div>
     );
 }

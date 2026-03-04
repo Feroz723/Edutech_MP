@@ -23,7 +23,6 @@ const {
     authLimiter,
     orderLimiter,
     paymentLimiter,
-    webhookLimiter,
 } = require("./middlewares/rateLimiter");
 const logger = require("./utils/logger");
 
@@ -69,8 +68,9 @@ app.use(globalLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Webhooks must be registered early and with dedicated limiters.
-app.use("/api/webhooks", webhookLimiter, webhookRoutes);
+// Webhooks must be registered BEFORE global rate limiters.
+// Paytm callbacks are URL-encoded POST payloads.
+app.use("/api/webhooks", webhookRoutes);
 
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/courses", courseRoutes);

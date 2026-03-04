@@ -86,7 +86,6 @@ function App() {
                                             <MyCourses />
                                         </ProtectedRoute>
                                     } />
-                                    <Route path="/courses" element={<Courses />} />
                                     <Route path="/courses/:id/learn" element={
                                         <ProtectedRoute role="student">
                                             <CourseLearn />
@@ -116,6 +115,7 @@ function App() {
                                                 <Routes>
                                                     <Route path="/" element={<Home />} />
                                                     <Route path="/auth" element={<Auth />} />
+                                                    <Route path="/courses" element={<Courses />} />
                                                     <Route path="/payments/callback" element={<PaymentCallback />} />
                                                     <Route path="/payments/checkout/:orderId" element={<PaymentCheckout />} />
                                                     <Route path="/courses/:id" element={<CourseDetail />} />

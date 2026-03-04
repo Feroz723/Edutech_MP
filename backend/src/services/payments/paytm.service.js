@@ -7,7 +7,7 @@ const PAYTM_HOST = isProd ? "https://securegw.paytm.in" : "https://securegw-stag
 const requiredEnv = ["PAYTM_MID", "PAYTM_MERCHANT_KEY", "PAYTM_WEBSITE"];
 
 function assertEnv() {
-    const missing = requiredEnv.filter((key) => !process.env[key]);
+    const missing = requiredEnv.filter((key) => !process.env[key] || process.env[key].startsWith("YOUR_"));
     if (missing.length) {
         throw new Error(`Missing Paytm env vars: ${missing.join(", ")}`);
     }
@@ -44,7 +44,7 @@ function verifySignature(payloadObj, key, checksum) {
         const hash = paytmHash.slice(0, paytmHash.length - 4);
         const calculated = crypto.createHash("sha256").update(`${payloadString}|${salt}`).digest("hex");
         return hash === calculated;
-    } catch (error) {
+    } catch {
         return false;
     }
 }
@@ -53,13 +53,32 @@ function amountToPaytmValue(amount) {
     return Number(amount).toFixed(2);
 }
 
-function getQrDataFromResponse(body = {}) {
-    return body.qrCode
-        || body.qrData
-        || body.deepLink
-        || body?.deepLinkInfo?.deepLink
-        || body?.deepLinkInfo?.deepLinkUrl
-        || null;
+/**
+ * Extract QR / deep-link data from Paytm response body.
+ * Paytm may return it under different keys across API versions.
+ */
+function extractQrData(body) {
+    // Try all known field names
+    const raw =
+        body?.qrCode ||
+        body?.qrData ||
+        body?.deepLink ||
+        body?.deepLinkInfo?.deepLink ||
+        null;
+    return raw || null;
+}
+
+function extractQrExpiry(body) {
+    const raw =
+        body?.qrCodeExpiry ||
+        body?.qrDataExpiry ||
+        body?.deepLinkInfo?.expiry ||
+        null;
+    if (!raw) return null;
+    // Paytm may return epoch seconds or ISO string
+    const num = Number(raw);
+    if (!Number.isNaN(num) && num > 1e9) return new Date(num * 1000).toISOString();
+    return raw;
 }
 
 async function initiateTransaction({ orderId, amount, userId }) {
@@ -79,7 +98,7 @@ async function initiateTransaction({ orderId, amount, userId }) {
             currency: "INR",
         },
         userInfo: {
-            custId: userId,
+            custId: String(userId),
         },
     };
 
@@ -106,21 +125,19 @@ async function initiateTransaction({ orderId, amount, userId }) {
         throw new Error(message);
     }
 
-    const qrData = getQrDataFromResponse(data.body);
-    const expiryMinutes = Number(process.env.PAYTM_QR_EXPIRY_MINUTES || 10);
-    const qrExpiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
+    const body = data.body || {};
 
     return {
         provider: "paytm",
-        txnToken: data.body.txnToken,
+        txnToken: body.txnToken,
         orderId,
         amount: amountToPaytmValue(amount),
         mid: process.env.PAYTM_MID,
         callbackUrl,
         environment: isProd ? "production" : "staging",
         paymentUrl: `${PAYTM_HOST}/theia/api/v1/showPaymentPage`,
-        qrData,
-        qrExpiresAt,
+        qrData: extractQrData(body),
+        qrExpiresAt: extractQrExpiry(body),
     };
 }
 

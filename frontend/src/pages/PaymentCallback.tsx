@@ -1,12 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+
+const SESSION_KEY = (orderId: string) => `paytm_checkout_session:${orderId}`;
 
 export default function PaymentCallback() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const [verifying, setVerifying] = useState(true);
 
     useEffect(() => {
         const verify = async () => {
@@ -19,20 +22,39 @@ export default function PaymentCallback() {
                 return;
             }
 
+            // If the gateway already told us it failed, skip server verification
+            if (status === "failed") {
+                showToast("Payment failed. Please try again.", "error");
+                navigate("/courses");
+                return;
+            }
+
             try {
                 await api.post("/payments/verify", { orderId });
+                // Clear the checkout session from storage on confirmed success
+                sessionStorage.removeItem(SESSION_KEY(orderId));
                 showToast("Payment successful! Course unlocked.", "success");
-            } catch (error: any) {
-                const message = error?.response?.data?.message
-                    || (status === "failed" ? "Payment failed. Please try again." : "Payment verification failed");
-                showToast(message, "error");
-            } finally {
                 navigate("/my-courses");
+            } catch (error: any) {
+                const statusCode = error?.response?.status;
+                if (statusCode === 401) {
+                    showToast("Session expired. Please log in again.", "error");
+                    navigate("/auth");
+                } else {
+                    const message = error?.response?.data?.message || "Payment verification failed";
+                    showToast(message, "error");
+                    navigate("/courses");
+                }
+            } finally {
+                setVerifying(false);
             }
         };
 
         verify();
-    }, [navigate, searchParams, showToast]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    if (!verifying) return null;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark px-6">
