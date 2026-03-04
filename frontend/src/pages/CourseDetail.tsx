@@ -9,12 +9,6 @@ import {
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 
-declare global {
-    interface Window {
-        Razorpay: any;
-    }
-}
-
 export default function CourseDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -27,6 +21,7 @@ export default function CourseDetailPage() {
     const [loading, setLoading] = useState(true);
     const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
     const [submittingReview, setSubmittingReview] = useState(false);
+    const [processingPayment, setProcessingPayment] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -74,6 +69,31 @@ export default function CourseDetailPage() {
             showToast("Failed to submit review", "error");
         } finally {
             setSubmittingReview(false);
+        }
+    };
+
+    const handlePurchase = async () => {
+        if (!id) return;
+
+        if (!user) {
+            navigate("/auth");
+            return;
+        }
+
+        try {
+            setProcessingPayment(true);
+            const orderRes = await api.post("/orders", { courseId: id });
+            const orderId = orderRes.data.orderId;
+
+            const paymentRes = await api.post("/payments/create", { orderId });
+            navigate(`/payments/checkout/${orderId}`, {
+                state: { paymentSession: paymentRes.data },
+            });
+        } catch (error: any) {
+            console.error("Purchase failed", error);
+            const message = error?.response?.data?.message || "Unable to start payment. Please try again.";
+            showToast(message, "error");
+            setProcessingPayment(false);
         }
     };
 
@@ -180,24 +200,29 @@ export default function CourseDetailPage() {
 
                                 <div className="space-y-8">
                                     <div className="flex items-end gap-2">
-                                        <span className="text-5xl font-black text-slate-900 dark:text-white uppercase">Free</span>
-                                        <span className="text-slate-400 font-bold mb-2 uppercase text-[10px] tracking-widest">Open Access Access</span>
+                                        <span className="text-5xl font-black text-slate-900 dark:text-white uppercase">₹{Number(course.price || 0).toLocaleString()}</span>
+                                        <span className="text-slate-400 font-bold mb-2 uppercase text-[10px] tracking-widest">One Time Access</span>
                                     </div>
 
                                     <div className="space-y-3">
-                                        <Button
-                                            onClick={() => {
-                                                if (user) {
-                                                    navigate(`/courses/${id}/learn`);
-                                                } else {
-                                                    navigate("/auth");
-                                                }
-                                            }}
-                                            className="w-full h-16 rounded-2xl text-lg group shadow-xl shadow-primary/20"
-                                        >
-                                            {user ? "Start Learning" : "Sign In to Access"}
-                                            <span className="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                                        </Button>
+                                        {hasAccess ? (
+                                            <Button
+                                                onClick={() => navigate(`/courses/${id}/learn`)}
+                                                className="w-full h-16 rounded-2xl text-lg group shadow-xl shadow-primary/20"
+                                            >
+                                                Start Learning
+                                                <span className="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                onClick={handlePurchase}
+                                                disabled={processingPayment}
+                                                className="w-full h-16 rounded-2xl text-lg group shadow-xl shadow-primary/20"
+                                            >
+                                                {processingPayment ? "Redirecting to Paytm..." : (user ? "Buy with Paytm" : "Sign In to Purchase")}
+                                                <span className="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform">payments</span>
+                                            </Button>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-8">

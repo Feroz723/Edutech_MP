@@ -28,10 +28,11 @@ const Navbar = () => {
 
                 {/* Main Nav */}
                 <nav className="hidden lg:flex items-center gap-8">
+                    <Link to="/" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">Home</Link>
                     <Link to="/courses" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">Courses</Link>
-                    <Link to="#" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">Mentors</Link>
-                    <Link to="#" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">Pricing</Link>
-                    <Link to="#" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">Resources</Link>
+                    {!loading && !user && (
+                        <Link to="/auth?mode=signup" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">Get Started</Link>
+                    )}
                 </nav>
 
                 {/* Auth Actions */}

@@ -47,6 +47,8 @@ export default function AdminOrders() {
     });
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [visibleCount, setVisibleCount] = useState(10);
 
     const fetchData = useCallback(async () => {
         try {
@@ -78,6 +80,19 @@ export default function AdminOrders() {
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
         </div>
     );
+
+
+    const filteredTransactions = transactions.filter((txn) => {
+        const query = searchTerm.toLowerCase();
+        const matchesSearch = !query
+            || txn.user_name.toLowerCase().includes(query)
+            || txn.course_title.toLowerCase().includes(query)
+            || txn.id.toLowerCase().includes(query);
+        const matchesStatus = statusFilter === "all" || txn.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
+    const visibleTransactions = filteredTransactions.slice(0, visibleCount);
 
     return (
         <AdminLayout
@@ -234,12 +249,24 @@ export default function AdminOrders() {
                             <p className="text-slate-400 text-sm font-medium mt-1">List of latest course purchases</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors">
-                                Status: All <ChevronRight size={14} className="rotate-90" />
+                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-600">
+                                <Filter size={14} />
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => {
+                                        setStatusFilter(e.target.value);
+                                        setVisibleCount(10);
+                                    }}
+                                    className="bg-transparent focus:outline-none"
+                                >
+                                    <option value="all">Status: All</option>
+                                    <option value="completed">Status: Completed</option>
+                                    <option value="pending">Status: Pending</option>
+                                    <option value="failed">Status: Failed</option>
+                                    <option value="refunded">Status: Refunded</option>
+                                </select>
+                                <ChevronRight size={14} className="rotate-90" />
                             </div>
-                            <button className="flex items-center gap-2 px-6 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors">
-                                <Filter size={14} /> Filter
-                            </button>
                         </div>
                     </div>
 
@@ -256,7 +283,7 @@ export default function AdminOrders() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {transactions.slice(0, 3).map((txn) => (
+                                {visibleTransactions.map((txn) => (
                                     <tr key={txn.id} className="group hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-none">
                                         <td className="px-10 py-8">
                                             <span className="text-sm font-black text-primary cursor-pointer hover:underline">#TXN-{txn.id.slice(0, 5).toUpperCase()}</span>
@@ -277,23 +304,39 @@ export default function AdminOrders() {
                                             <span className="text-sm font-medium text-slate-500 line-clamp-1">{txn.course_title}</span>
                                         </td>
                                         <td className="px-10 py-8">
-                                            <span className="text-sm font-black text-slate-900">${Number(txn.total_amount).toFixed(2)}</span>
+                                            <span className="text-sm font-black text-slate-900">₹{Number(txn.total_amount).toLocaleString()}</span>
                                         </td>
                                         <td className="px-10 py-8">
                                             <span className="text-sm font-bold text-slate-400">{new Date(txn.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                         </td>
                                         <td className="px-10 py-8 text-right">
-                                            <span className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${txn.status === 'completed'
-                                                ? 'bg-emerald-100 text-emerald-600'
-                                                : 'bg-amber-100 text-amber-600'
-                                                }`}>
-                                                {txn.status === 'completed' ? 'Success' : 'Pending'}
+                                            <span className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                                txn.status === 'completed'
+                                                    ? 'bg-emerald-100 text-emerald-600'
+                                                    : txn.status === 'failed' || txn.status === 'refunded'
+                                                        ? 'bg-red-100 text-red-600'
+                                                        : 'bg-amber-100 text-amber-600'
+                                            }`}>
+                                                {txn.status}
                                             </span>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                        {visibleTransactions.length === 0 && (
+                            <div className="py-16 text-center text-slate-400 font-semibold">No transactions found for current filters.</div>
+                        )}
+                        {visibleTransactions.length > 0 && visibleTransactions.length < filteredTransactions.length && (
+                            <div className="p-6 border-t border-slate-100 flex justify-center">
+                                <button
+                                    onClick={() => setVisibleCount((count) => count + 10)}
+                                    className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800"
+                                >
+                                    Load More
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

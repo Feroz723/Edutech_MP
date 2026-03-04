@@ -56,10 +56,7 @@ export default function Home() {
                                         Explore Courses
                                     </Button>
                                 )}
-                                <button className="px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined">play_circle</span>
-                                    Watch Demo
-                                </button>
+
                             </div>
                             <div className="flex items-center gap-4 pt-4 animate-in">
                                 <div className="flex -space-x-3">
@@ -164,8 +161,11 @@ export default function Home() {
                                 >
                                     Get Started Now
                                 </button>
-                                <button className="px-10 py-5 bg-primary border-2 border-white/30 text-white font-bold rounded-2xl hover:bg-white/10 transition-all">
-                                    View Pricing Plans
+                                <button
+                                    onClick={() => navigate("/courses")}
+                                    className="px-10 py-5 bg-primary border-2 border-white/30 text-white font-bold rounded-2xl hover:bg-white/10 transition-all"
+                                >
+                                    Browse Courses
                                 </button>
                             </div>
                         </div>

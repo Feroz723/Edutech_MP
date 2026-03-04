@@ -23,7 +23,6 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.18.0",
-    "razorpay": "^2.9.6",
     "winston": "^3.19.0"
   },
   "devDependencies": {

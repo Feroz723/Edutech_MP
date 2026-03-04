@@ -18,6 +18,8 @@ import NotFound from '@/pages/NotFound'
 import Auth from '@/pages/Auth'
 const Certificates = lazy(() => import('@/pages/Certificates'))
 const Assignments = lazy(() => import('@/pages/Assignments'))
+const PaymentCallback = lazy(() => import('@/pages/PaymentCallback'))
+const PaymentCheckout = lazy(() => import('@/pages/PaymentCheckout'))
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'))
@@ -114,6 +116,8 @@ function App() {
                                                 <Routes>
                                                     <Route path="/" element={<Home />} />
                                                     <Route path="/auth" element={<Auth />} />
+                                                    <Route path="/payments/callback" element={<PaymentCallback />} />
+                                                    <Route path="/payments/checkout/:orderId" element={<PaymentCheckout />} />
                                                     <Route path="/courses/:id" element={<CourseDetail />} />
                                                     <Route path="*" element={<NotFound />} />
                                                 </Routes>

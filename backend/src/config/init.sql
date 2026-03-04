@@ -97,6 +97,12 @@ CREATE TABLE IF NOT EXISTS orders (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     total_amount NUMERIC NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
+    payment_provider VARCHAR(50),
+    gateway_txn_id VARCHAR(255),
+    gateway_order_id VARCHAR(255),
+    payment_status_raw VARCHAR(100),
+    payment_verified_at TIMESTAMP,
+    gateway_payload JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
