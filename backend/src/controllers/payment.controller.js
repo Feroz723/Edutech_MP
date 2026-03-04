@@ -220,11 +220,21 @@ exports.handlePaytmWebhook = async (req, res) => {
         const orderId = payload.ORDERID;
         const txnId = payload.TXNID;
         const txnStatus = payload.STATUS;
-        const userId = payload.CUST_ID;
 
-        if (!orderId || !userId) {
+        if (!orderId) {
             return res.status(400).json({ message: "Invalid callback payload" });
         }
+
+        const orderResult = await pool.query(
+            "SELECT user_id FROM orders WHERE id = $1",
+            [orderId]
+        );
+
+        if (orderResult.rows.length === 0) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        const userId = orderResult.rows[0].user_id;
 
         const { provider, service } = getPaymentProvider();
 
