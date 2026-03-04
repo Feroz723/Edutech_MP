@@ -5,84 +5,101 @@ const { getPaymentProvider } = require("../services/payments");
 const PLATFORM_COMMISSION = 0.2; // 20%
 
 async function completeOrderAndLedger({ orderId, userId, providerName, gatewayTxnId = null, rawStatus = "TXN_SUCCESS", payload = {} }) {
-    // Idempotency check
-    const orderResult = await pool.query(
-        "SELECT * FROM orders WHERE id = $1 AND user_id = $2",
-        [orderId, userId]
-    );
+    const client = await pool.connect();
 
-    if (orderResult.rows.length === 0) {
-        return { status: 404, body: { message: "Order not found" } };
+    try {
+        await client.query("BEGIN");
+
+        // Lock row to avoid race-condition double processing.
+        const orderResult = await client.query(
+            "SELECT * FROM orders WHERE id = $1 AND user_id = $2 FOR UPDATE",
+            [orderId, userId]
+        );
+
+        if (orderResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return { status: 404, body: { message: "Order not found" } };
+        }
+
+        const order = orderResult.rows[0];
+
+        if (order.status === "completed") {
+            await client.query("ROLLBACK");
+            return { status: 200, body: { message: "Order already completed successfully" } };
+        }
+
+        if (order.status === "failed" || order.status === "refunded") {
+            await client.query("ROLLBACK");
+            return { status: 400, body: { message: `Order cannot transition from ${order.status}` } };
+        }
+
+        const orderUpdate = await client.query(
+            `UPDATE orders
+             SET status = 'completed',
+                 payment_provider = $1,
+                 gateway_txn_id = COALESCE($2, gateway_txn_id),
+                 gateway_order_id = $3,
+                 payment_status_raw = $4,
+                 payment_verified_at = CURRENT_TIMESTAMP,
+                 gateway_payload = $5
+             WHERE id = $6 AND status = 'pending'`,
+            [providerName, gatewayTxnId, orderId, rawStatus, JSON.stringify(payload), orderId]
+        );
+
+        if (orderUpdate.rowCount === 0) {
+            await client.query("ROLLBACK");
+            return { status: 409, body: { message: "Order is no longer pending" } };
+        }
+
+        const itemResult = await client.query(
+            `SELECT oi.course_id, oi.price, c.instructor_id
+             FROM order_items oi
+             JOIN courses c ON oi.course_id = c.id
+             WHERE oi.order_id = $1`,
+            [orderId]
+        );
+
+        if (itemResult.rows.length === 0) {
+            throw new Error("Order items not found");
+        }
+
+        const item = itemResult.rows[0];
+        const gross = Number(item.price);
+        const platformFee = gross * PLATFORM_COMMISSION;
+        const instructorShare = gross - platformFee;
+
+        // The UNIQUE(order_id) constraint in instructor_earnings ensures ledger-level idempotency.
+        await client.query(
+            `INSERT INTO instructor_earnings
+             (instructor_id, course_id, student_id, order_id, gross_amount, platform_fee, instructor_share)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+                item.instructor_id,
+                item.course_id,
+                userId,
+                orderId,
+                gross,
+                platformFee,
+                instructorShare,
+            ]
+        );
+
+        await client.query(
+            `UPDATE instructor_profiles
+             SET total_earnings = total_earnings + $1
+             WHERE user_id = $2`,
+            [instructorShare, item.instructor_id]
+        );
+
+        await client.query("COMMIT");
+
+        return { status: 200, body: { message: "Payment verified & revenue recorded" } };
+    } catch (error) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw error;
+    } finally {
+        client.release();
     }
-
-    const order = orderResult.rows[0];
-
-    if (order.status === "completed") {
-        return { status: 200, body: { message: "Order already completed successfully" } };
-    }
-
-    if (order.status === "failed" || order.status === "refunded") {
-        return { status: 400, body: { message: `Order cannot transition from ${order.status}` } };
-    }
-
-    await pool.query("BEGIN");
-
-    await pool.query(
-        `UPDATE orders
-         SET status = 'completed',
-             payment_provider = $1,
-             gateway_txn_id = COALESCE($2, gateway_txn_id),
-             gateway_order_id = $3,
-             payment_status_raw = $4,
-             payment_verified_at = CURRENT_TIMESTAMP,
-             gateway_payload = $5
-         WHERE id = $6 AND status = 'pending'`,
-        [providerName, gatewayTxnId, orderId, rawStatus, JSON.stringify(payload), orderId]
-    );
-
-    const itemResult = await pool.query(
-        `SELECT oi.course_id, oi.price, c.instructor_id
-         FROM order_items oi
-         JOIN courses c ON oi.course_id = c.id
-         WHERE oi.order_id = $1`,
-        [orderId]
-    );
-
-    if (itemResult.rows.length === 0) {
-        throw new Error("Order items not found");
-    }
-
-    const item = itemResult.rows[0];
-    const gross = Number(item.price);
-    const platformFee = gross * PLATFORM_COMMISSION;
-    const instructorShare = gross - platformFee;
-
-    // The UNIQUE(order_id) constraint in instructor_earnings ensures ledger-level idempotency.
-    await pool.query(
-        `INSERT INTO instructor_earnings
-         (instructor_id, course_id, student_id, order_id, gross_amount, platform_fee, instructor_share)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-            item.instructor_id,
-            item.course_id,
-            userId,
-            orderId,
-            gross,
-            platformFee,
-            instructorShare,
-        ]
-    );
-
-    await pool.query(
-        `UPDATE instructor_profiles
-         SET total_earnings = total_earnings + $1
-         WHERE user_id = $2`,
-        [instructorShare, item.instructor_id]
-    );
-
-    await pool.query("COMMIT");
-
-    return { status: 200, body: { message: "Payment verified & revenue recorded" } };
 }
 
 async function markOrderFailed({ orderId, userId, providerName, gatewayTxnId = null, rawStatus = "TXN_FAILURE", payload = {} }) {
