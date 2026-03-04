@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
@@ -11,33 +11,80 @@ import {
     AlertCircle,
     Search,
     RefreshCw,
-    Calendar,
     Clock
 } from "lucide-react";
 
-interface Log {
+type LogLevel = "info" | "warn" | "error";
+
+interface AuditLogApi {
     id: string;
-    level: string;
+    action: string;
+    details?: any;
+    timestamp: string;
+    user_name?: string;
+}
+
+interface LogViewModel {
+    id: string;
+    level: LogLevel;
     message: string;
     timestamp: string;
-    source?: string;
+    source: string;
+    actor: string;
+}
+
+function inferLevel(action: string): LogLevel {
+    const normalized = action.toLowerCase();
+    if (normalized.includes("delete") || normalized.includes("suspend") || normalized.includes("refund")) return "warn";
+    if (normalized.includes("fail") || normalized.includes("error")) return "error";
+    return "info";
+}
+
+function inferSource(action: string, details?: any): string {
+    if (details?.source) return String(details.source);
+    const prefix = action.split("_")[0];
+    return prefix ? prefix.toLowerCase() : "system";
+}
+
+function humanizeAction(action: string, details?: any) {
+    const base = action
+        .toLowerCase()
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+    if (details?.title) return `${base} — ${details.title}`;
+    if (details?.targetUserId) return `${base} — user ${details.targetUserId}`;
+    if (details?.courseId) return `${base} — course ${details.courseId}`;
+
+    return base;
 }
 
 export default function AdminLogs() {
     const { user } = useAuth();
     const { showToast } = useToast();
     const navigate = useNavigate();
-    const [logs, setLogs] = useState<Log[]>([]);
+
+    const [logs, setLogs] = useState<LogViewModel[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [levelFilter, setLevelFilter] = useState("all");
+    const [levelFilter, setLevelFilter] = useState<"all" | LogLevel>("all");
+    const [autoRefresh, setAutoRefresh] = useState(false);
 
     const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get("/admin/logs");
-            setLogs(res.data);
-        } catch (error) {
+            const mapped = (res.data as AuditLogApi[]).map((log) => ({
+                id: log.id,
+                level: inferLevel(log.action),
+                message: humanizeAction(log.action, log.details),
+                timestamp: log.timestamp,
+                source: inferSource(log.action, log.details),
+                actor: log.user_name || "System",
+            }));
+            setLogs(mapped);
+        } catch {
             showToast("Failed to load logs", "error");
         } finally {
             setLoading(false);
@@ -53,13 +100,31 @@ export default function AdminLogs() {
         fetchLogs();
     }, [user, navigate, fetchLogs]);
 
-    const filteredLogs = logs.filter(l => {
-        const matchesSearch = l.message?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesLevel = levelFilter === "all" || l.level === levelFilter;
-        return matchesSearch && matchesLevel;
-    });
+    useEffect(() => {
+        if (!autoRefresh) return;
+        const interval = setInterval(fetchLogs, 30000);
+        return () => clearInterval(interval);
+    }, [autoRefresh, fetchLogs]);
 
-    const getLevelIcon = (level: string) => {
+    const filteredLogs = useMemo(() => {
+        return logs.filter((l) => {
+            const q = searchTerm.toLowerCase();
+            const matchesSearch =
+                l.message.toLowerCase().includes(q)
+                || l.actor.toLowerCase().includes(q)
+                || l.source.toLowerCase().includes(q);
+            const matchesLevel = levelFilter === "all" || l.level === levelFilter;
+            return matchesSearch && matchesLevel;
+        });
+    }, [logs, searchTerm, levelFilter]);
+
+    const stats = useMemo(() => ({
+        info: logs.filter((l) => l.level === "info").length,
+        warn: logs.filter((l) => l.level === "warn").length,
+        error: logs.filter((l) => l.level === "error").length,
+    }), [logs]);
+
+    const getLevelIcon = (level: LogLevel) => {
         switch (level) {
             case "error": return <AlertCircle size={16} className="text-red-600" />;
             case "warn": return <AlertTriangle size={16} className="text-amber-600" />;
@@ -67,7 +132,7 @@ export default function AdminLogs() {
         }
     };
 
-    const getLevelBadgeStyle = (level: string) => {
+    const getLevelBadgeStyle = (level: LogLevel) => {
         switch (level) {
             case "error": return "bg-red-100 text-red-700";
             case "warn": return "bg-amber-100 text-amber-700";
@@ -75,139 +140,110 @@ export default function AdminLogs() {
         }
     };
 
-    // Generate some mock logs for demonstration
-    const mockLogs: Log[] = [
-        { id: "1", level: "info", message: "Server started successfully on port 5000", timestamp: new Date().toISOString(), source: "server" },
-        { id: "2", level: "info", message: "Database connection established", timestamp: new Date(Date.now() - 60000).toISOString(), source: "database" },
-        { id: "3", level: "info", message: "User admin@edutech.com logged in", timestamp: new Date(Date.now() - 120000).toISOString(), source: "auth" },
-        { id: "4", level: "warn", message: "High memory usage detected: 85%", timestamp: new Date(Date.now() - 180000).toISOString(), source: "system" },
-        { id: "5", level: "info", message: "New course created: Advanced React Development", timestamp: new Date(Date.now() - 240000).toISOString(), source: "course" },
-        { id: "6", level: "info", message: "Payment received: ₹2,499 for course ID 123", timestamp: new Date(Date.now() - 300000).toISOString(), source: "payment" },
-        { id: "7", level: "error", message: "Failed to send email notification to user@example.com", timestamp: new Date(Date.now() - 360000).toISOString(), source: "email" },
-        { id: "8", level: "info", message: "User student@edutech.com registered via Google OAuth", timestamp: new Date(Date.now() - 420000).toISOString(), source: "auth" },
-        { id: "9", level: "warn", message: "Rate limit exceeded for IP 192.168.1.100", timestamp: new Date(Date.now() - 480000).toISOString(), source: "security" },
-        { id: "10", level: "info", message: "Course published: Python for Data Science", timestamp: new Date(Date.now() - 540000).toISOString(), source: "course" },
-    ];
-
-    const displayLogs = logs.length > 0 ? filteredLogs : mockLogs.filter(l => {
-        const matchesSearch = l.message?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesLevel = levelFilter === "all" || l.level === levelFilter;
-        return matchesSearch && matchesLevel;
-    });
-
     return (
         <AdminLayout
             title="Platform Audit Logs"
             subtitle="Monitor institutional events and security protocols"
         >
             <div className="space-y-10">
-                {/* Header Actions */}
-                <div className="flex justify-end mb-6">
-                    <button
-                        onClick={fetchLogs}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
-                    >
-                        <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                        Refresh
-                    </button>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Info size={20} className="text-blue-600" />
-                            <span className="text-slate-500 font-medium">Info Logs</span>
-                        </div>
-                        <p className="text-3xl font-bold">{mockLogs.filter(l => l.level === "info").length}</p>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <AlertTriangle size={20} className="text-amber-600" />
-                            <span className="text-slate-500 font-medium">Warnings</span>
-                        </div>
-                        <p className="text-3xl font-bold">{mockLogs.filter(l => l.level === "warn").length}</p>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <AlertCircle size={20} className="text-red-600" />
-                            <span className="text-slate-500 font-medium">Errors</span>
-                        </div>
-                        <p className="text-3xl font-bold">{mockLogs.filter(l => l.level === "error").length}</p>
-                    </div>
-                </div>
-
-                {/* Filters */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="relative w-full md:w-80">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <input
-                                type="text"
-                                placeholder="Search logs..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                                placeholder="Search by action, actor, source..."
+                                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
                             />
                         </div>
                         <select
                             value={levelFilter}
-                            onChange={(e) => setLevelFilter(e.target.value)}
-                            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-300"
+                            onChange={(e) => setLevelFilter(e.target.value as any)}
+                            className="px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold"
                         >
                             <option value="all">All Levels</option>
                             <option value="info">Info</option>
-                            <option value="warn">Warnings</option>
-                            <option value="error">Errors</option>
+                            <option value="warn">Warn</option>
+                            <option value="error">Error</option>
                         </select>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setAutoRefresh((v) => !v)}
+                            className={`px-4 py-2 rounded-xl border text-sm font-semibold transition-colors ${autoRefresh ? "bg-primary text-white border-primary" : "bg-white border-slate-200 text-slate-700"}`}
+                        >
+                            Auto-refresh {autoRefresh ? "On" : "Off"}
+                        </button>
+                        <button
+                            onClick={fetchLogs}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
+                        >
+                            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                            Refresh
+                        </button>
                     </div>
                 </div>
 
-                {/* Logs List */}
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                    <div className="divide-y divide-slate-100">
-                        {displayLogs.map((log) => (
-                            <div key={log.id} className="p-4 hover:bg-slate-50 transition-colors">
-                                <div className="flex items-start gap-4">
-                                    <div className="mt-1">
-                                        {getLevelIcon(log.level)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase ${getLevelBadgeStyle(log.level)}`}>
-                                                {log.level}
-                                            </span>
-                                            {log.source && (
-                                                <span className="text-xs text-slate-400 font-mono">
-                                                    [{log.source}]
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <StatCard icon={<Info size={20} className="text-blue-600" />} label="Info Logs" value={stats.info} />
+                    <StatCard icon={<AlertTriangle size={20} className="text-amber-600" />} label="Warning Logs" value={stats.warn} />
+                    <StatCard icon={<AlertCircle size={20} className="text-red-600" />} label="Error Logs" value={stats.error} />
+                </div>
+
+                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                        <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                            <Activity size={20} className="text-primary" />
+                            System Events
+                        </h3>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            {filteredLogs.length} records
+                        </span>
+                    </div>
+
+                    <div className="divide-y divide-slate-100 max-h-[640px] overflow-y-auto">
+                        {!loading && filteredLogs.length === 0 ? (
+                            <div className="p-16 text-center">
+                                <Clock className="mx-auto mb-4 text-slate-300" size={36} />
+                                <p className="text-slate-500 font-semibold">No audit logs found for current filters.</p>
+                            </div>
+                        ) : (
+                            filteredLogs.map((log) => (
+                                <div key={log.id} className="p-6 hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-start gap-4">
+                                        <div className="mt-0.5">{getLevelIcon(log.level)}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-wrap items-center gap-3 mb-2">
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getLevelBadgeStyle(log.level)}`}>
+                                                    {log.level}
                                                 </span>
-                                            )}
-                                        </div>
-                                        <p className="text-slate-700 font-medium">{log.message}</p>
-                                        <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
-                                            <span className="flex items-center gap-1">
-                                                <Calendar size={12} />
-                                                {new Date(log.timestamp).toLocaleDateString()}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Clock size={12} />
-                                                {new Date(log.timestamp).toLocaleTimeString()}
-                                            </span>
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{log.source}</span>
+                                                <span className="text-xs text-slate-400">{new Date(log.timestamp).toLocaleString()}</span>
+                                            </div>
+                                            <p className="text-sm font-semibold text-slate-800">{log.message}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Actor: {log.actor}</p>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
-
-                    {displayLogs.length === 0 && (
-                        <div className="p-12 text-center">
-                            <Activity size={48} className="mx-auto text-slate-300 mb-4" />
-                            <p className="text-slate-500">No logs found matching your criteria</p>
-                        </div>
-                    )}
                 </div>
             </div>
         </AdminLayout>
+    );
+}
+
+function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
+    return (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200">
+            <div className="flex items-center gap-3 mb-2">
+                {icon}
+                <span className="text-slate-500 font-medium">{label}</span>
+            </div>
+            <p className="text-3xl font-bold">{value}</p>
+        </div>
     );
 }

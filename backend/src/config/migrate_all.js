@@ -39,6 +39,31 @@ async function migrateAll() {
         `);
         console.log("✅ courses.thumbnail_url column ensured");
 
+        // 1d. orders payment tracking columns
+        await pool.query(`
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'payment_provider') THEN
+                    ALTER TABLE orders ADD COLUMN payment_provider VARCHAR(50);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'gateway_txn_id') THEN
+                    ALTER TABLE orders ADD COLUMN gateway_txn_id VARCHAR(255);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'gateway_order_id') THEN
+                    ALTER TABLE orders ADD COLUMN gateway_order_id VARCHAR(255);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'payment_status_raw') THEN
+                    ALTER TABLE orders ADD COLUMN payment_status_raw VARCHAR(100);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'payment_verified_at') THEN
+                    ALTER TABLE orders ADD COLUMN payment_verified_at TIMESTAMP;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'gateway_payload') THEN
+                    ALTER TABLE orders ADD COLUMN gateway_payload JSONB;
+                END IF;
+            END $$;
+        `);
+        console.log("✅ orders payment tracking columns ensured");
+
         // =============================================
         // 2. TABLE CREATION (safe IF NOT EXISTS)
         // =============================================
